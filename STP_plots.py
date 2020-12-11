@@ -4,14 +4,70 @@ import matplotlib.pyplot as plt
 import cartopy
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from collections import OrderedDict
+from scipy.interpolate import griddata
+from netCDF4 import Dataset
 
 
-
-DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
-outdir = 'H:\\Research\\' # directory where you want output images to be saved to
+# For home computer
+#DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
+#outdir = 'H:\\Research\\' # directory where you want output images to be saved to
 filename = 'STP_soundings.csv'
+
+# For my laptop
+DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
+NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
+outdir = DataDirectory
+
+
 #######################################################################################################################
+def getMesoValues(DataDirectory,filename,lat_list,lon_list):
+    try:
+        # first read in the file
+        data = Dataset(DataDirectory+filename)
+        lats = data.variables['lats'][:]
+        lons = data.variables['lons'][:]
+        stpf = data.variables['SIGT'][:] # Fixed layer STP
+        stpe = data.variables['STPC'][:] # Eff. Layer STP
+        # then interpolate to find the most approx value
+        points = np.array( (lons.flatten(), lats.flatten()) ).T
+        STPF = stpf.flatten()
+        STPE = stpe.flatten()
+
+        stpe_list = []
+        stpf_list = []
+
+        for l,L in enumerate(lat_list):
+            STPF0 = griddata(points, STPF, (lon_list[l],L))
+            STPE0 = griddata(points, STPE, (lon_list[l], L))
+            stpe_list.append(STPE0)
+            stpf_list.append(STPF0)
+
+        return stpe_list, stpf_list
+
+    except:
+        filename = filename[0:18]+".nc"
+        # first read in the file
+        data = Dataset(DataDirectory + filename)
+        lats = data.variables['lats'][:]
+        lons = data.variables['lons'][:]
+        stpf = data.variables['SIGT'][:]  # Fixed layer STP
+        stpe = data.variables['STPC'][:]  # Eff. Layer STP
+        # then interpolate to find the most approx value
+        points = np.array((lons.flatten(), lats.flatten())).T
+        STPF = stpf.flatten()
+        STPE = stpe.flatten()
+
+        stpe_list = []
+        stpf_list = []
+
+        for l, L in enumerate(lat_list):
+            STPF0 = griddata(points, STPF, (lon_list[l], L))
+            STPE0 = griddata(points, STPE, (lon_list[l], L))
+            stpe_list.append(STPE0)
+            stpf_list.append(STPF0)
+
+        return stpe_list, stpf_list
+
 def dataReadIn(DataDirectory,filename):
     #print("Reading in Data...")
     print("Processing file: " + DataDirectory + '\\' + filename+"\n")
@@ -40,7 +96,7 @@ def dataReadIn(DataDirectory,filename):
                 stpe.append(float(row[4]))
                 stpf.append(float(row[5]))
 
-    print("Complete!")
+    print("Read-In Complete!")
     #print(datetime.datetime.now())
     #print("")
     return date, site, lat, lon, stpe, stpf
@@ -89,7 +145,7 @@ def plotSTPDist(stpe,stpf):
 
 
 def sortSites(sites,lat,lon):
-
+    # Used for plotting the spatial distribution of soundings (# of soundings per site)
     site_list = {}
     for s,S in enumerate(sites):
         if S in site_list.keys():
@@ -192,7 +248,44 @@ def plotTemporalDist(date):
     plt.show()
 
 
-def sortByDate(date, lat, lon):
+def plotOvM(obsE,mesoE,obsF,mesoF):
+
+    plt.figure(1)
+    limit = 13
+    linex = np.arange(0,limit,1)
+    liney = linex
+    plt.scatter(obsE,mesoE,marker='x',color='r',label='Effective STP')
+    plt.scatter(obsF,mesoF,marker='x',color='b',label="Fixed Layer STP")
+    plt.plot(linex,liney,color='k')
+    plt.xlim(0,limit)
+    plt.ylim(0,limit)
+    plt.grid(color='gray',alpha=0.75)
+    plt.legend()
+    plt.ylabel("SPC Mesoanalysis STP")
+    plt.xlabel("Observed Sounding STP")
+    plt.title("Observed VS. SPC Mesoanalysis STP")
+    plt.show()
+
+    plt.figure(2)
+    limit = 3
+    linex = np.arange(0,limit,1)
+    liney = linex
+    plt.scatter(obsE,mesoE,marker='x',color='r',label='Effective STP')
+    plt.scatter(obsF,mesoF,marker='x',color='b',label="Fixed Layer STP")
+    plt.plot(linex,liney,color='k')
+    plt.xlim(0,limit)
+    plt.ylim(0,limit)
+    plt.grid(color='gray',alpha=0.75)
+    plt.legend()
+    plt.ylabel("SPC Mesoanalysis STP")
+    plt.xlabel("Observed Sounding STP")
+    plt.title("Observed VS. SPC Mesoanalysis STP")
+    plt.show()
+
+
+def sortByDate(date, lat, lon, stpe, stpf, site):
+    # This will read in the data and organize it such that
+    # each date contains all lat/lon points, values, and site IDs
     files = {}
     for d, date in enumerate(date):
         hour = date[9:]
@@ -204,16 +297,51 @@ def sortByDate(date, lat, lon):
         if date_string in files.keys():
             files[date_string][0].append(lat[d])
             files[date_string][1].append(lon[d])
+            files[date_string][2].append(stpe[d])
+            files[date_string][3].append(stpf[d])
+            files[date_string][4].append(site[d])
         else:
-            files[date_string] = [[lat[d]],[lon[d]]]
+            files[date_string] = [[lat[d]],[lon[d]],[stpe[d]],[stpf[d]],[site[d]]]
     return files
 
 date, site, lat, lon, stpe, stpf = dataReadIn(DataDirectory,filename)
-
-#files = sortByDate(date, lat, lon)
 #plotTemporalDist(date)
-plotSTPDist(stpe,stpf)
+#plotSTPDist(stpe,stpf)
 #site_list = sortSites(site,lat,lon)
 #plotSoundingMap(site_list)
 
+obsE = []
+obsF = []
+mesoE = []
+mesoF = []
+files = sortByDate(date, lat, lon, stpe, stpf, site)
+
+# I'm not super thrilled about this methodology right now.
+# It feels kinda sloppy and I'm not convinced there isn't some mix-matching going on.
+# Try to find a more robust way to get the meso data AND match it to the corresponding obs.
+for key, values in files.items():
+
+    stpe_diff = []
+    stpf_diff = []
+
+    Mstpe, Mstpf = getMesoValues(NCdir,"sfcoalite_"+key+".nc",values[0],values[1])
+
+    for val in range(0,len(Mstpe)):
+        mesoE.append(Mstpe[val])
+        mesoF.append(Mstpf[val])
+        obsE.append(values[2][val])
+        obsF.append(values[3][val])
+
+
+    for i in range(0,len(values[0])):
+        stpe_err = values[2][i] - Mstpe[i]
+        stpf_err = values[3][i] - Mstpf[i]
+        stpe_diff.append(stpe_err)
+        stpf_diff.append(stpf_err)
+
+    files[key] = [values[0], values[1], values[2], values[3], values[4], Mstpe, Mstpf, stpe_diff, stpf_diff]
+
+#print(len(obsE),len(mesoE))
+
+plotOvM(obsE,obsF,mesoE,mesoF)
 

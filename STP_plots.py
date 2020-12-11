@@ -252,7 +252,7 @@ def plotOvM(obsE,mesoE,obsF,mesoF):
 
     plt.figure(1)
     limit = 13
-    linex = np.arange(0,limit,1)
+    linex = np.arange(0,limit+1,1)
     liney = linex
     plt.scatter(obsE,mesoE,marker='x',color='r',label='Effective STP')
     plt.scatter(obsF,mesoF,marker='x',color='b',label="Fixed Layer STP")
@@ -268,7 +268,7 @@ def plotOvM(obsE,mesoE,obsF,mesoF):
 
     plt.figure(2)
     limit = 3
-    linex = np.arange(0,limit,1)
+    linex = np.arange(0,limit+1,1)
     liney = linex
     plt.scatter(obsE,mesoE,marker='x',color='r',label='Effective STP')
     plt.scatter(obsF,mesoF,marker='x',color='b',label="Fixed Layer STP")

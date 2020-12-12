@@ -1,4 +1,5 @@
 import csv
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy
@@ -102,6 +103,51 @@ def dataReadIn(DataDirectory,filename):
     return date, site, lat, lon, stpe, stpf
 
 
+def plotSTPerrorDist(stpe,stpf):
+
+    bins = np.arange(-10,10,0.1)
+    hist,bin_edge = np.histogram(stpe,bins,(-10.0,10.0))
+    ymax = np.max(hist) + 10
+    yloc = ymax - 10
+
+    plt.figure(1)
+    plt.subplot(1,2,1)
+    plt.hist(stpe, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
+    plt.title("Effective Layer STP Error Distribution",fontsize=10)
+    plt.xlabel("Error")
+    plt.ylabel("Frequency")
+    plt.xlim(-6.0, 6.0)
+    plt.xticks(np.arange(-6,6,1))
+    plt.ylim(0,ymax)
+    #plt.text(7.0,yloc,"n = "+str(len(stpe)))
+    plt.grid(color='gray',alpha=0.65)
+
+    plt.subplot(1,2,2)
+    plt.hist(stpf, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
+    plt.title("Fixed Layer STP Error Distribution",fontsize=10)
+    plt.xlabel("Error")
+    plt.xlim(-6., 6)
+    plt.xticks(np.arange(-6., 6., 1))
+    plt.ylim(0,ymax)
+    #plt.text(7.0,yloc,"n = "+str(len(stpf)))
+    plt.grid(color='gray',alpha=0.65)
+
+    plt.show()
+    #plt.savefig(outdir + "\\Blizzard_SnowAccumHist.png")
+
+
+    plt.figure(2)
+    plt.boxplot([stpe,stpf], labels=["Effective Layer", "Fixed Layer"])
+    plt.title("STP Error Distribution \n n = "+str(len(stpe)),fontsize=10)
+    plt.ylabel("STP Error Value")
+    plt.ylim(-6.0,6.0)
+
+    plt.show()
+
+
+
+
+
 def plotSTPDist(stpe,stpf):
 
     bins = np.arange(0,15,0.25)
@@ -140,8 +186,23 @@ def plotSTPDist(stpe,stpf):
     plt.title("STP Distribution \n n = "+str(len(stpe)),fontsize=10)
     plt.ylabel("STP Value")
 
-
     plt.show()
+
+
+def errorByValue(eff_vals,eff_error,fix_vals,fix_error):
+
+    plt.scatter(eff_vals,eff_error,marker='x',color='r',label="Eff. Layer")
+    plt.scatter(fix_vals,fix_error,marker='x',color='b',label="Fixed Layer")
+    plt.grid(color='gray',alpha=0.65)
+    plt.xlim(0,14)
+    plt.xticks(np.arange(0, 14, 1))
+    plt.ylim(-6,6)
+    plt.ylabel("STP Error")
+    plt.xlabel("Observed STP Value")
+    plt.title("STP Error by Observed Value")
+    plt.legend()
+    plt.show()
+
 
 
 def sortSites(sites,lat,lon):
@@ -283,6 +344,73 @@ def plotOvM(obsE,mesoE,obsF,mesoF):
     plt.show()
 
 
+
+def plotSTP(DataDirectory,filename,sites=None):
+    ### Set up the map ###
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    #ax.add_feature(cartopy.feature.LAND)
+    #ax.add_feature(cartopy.feature.OCEAN)
+    #ax.add_feature(cartopy.feature.STATES, edgecolor='gray')
+    #ax.add_feature(cartopy.feature.COASTLINE)
+
+    # add lakes and international borders
+    ax.add_feature(cartopy.feature.LAKES)
+    ax.add_feature(cartopy.feature.BORDERS)
+
+    # Add hi-res states
+    scale = '110m'
+    states50 = cfeature.NaturalEarthFeature(
+        category='cultural',
+        name='admin_1_states_provinces_lines',
+        scale=scale,
+        facecolor='none',
+        edgecolor='black')
+    ax.add_feature(states50, zorder=2, linewidth=1)
+
+    # add hi-res coastline (for islands)
+    ax.coastlines(resolution='50m', color='black', linewidth=1)
+    # add hi-res land cover
+    land_10m = cartopy.feature.NaturalEarthFeature('physical', 'land', '10m')
+    ax.add_feature(land_10m, zorder=0, facecolor='white', edgecolor='white', linewidth=1)
+    # change the extent
+    ax.set_extent([-125, -65, 23, 50])
+
+    ### Plot the data ###
+    data = Dataset(DataDirectory+filename)
+    lats = data.variables['lats'][:]
+    lons = data.variables['lons'][:]
+    stpf = data.variables['SIGT'][:] # Fixed layer STP
+    stpe = data.variables['STPC'][:] # Eff. Layer STP
+
+    plt.contourf(lons, lats, stpe, np.arange(0.1,10,0.1),
+                 cmap='nipy_spectral',
+                 alpha=0.95,
+                 transform=ccrs.PlateCarree())
+
+    plt.title("RAP SFC OA Effective Layer STP valid at "+filename[12:14]+"/"+filename[14:16]+"/"+filename[10:12]+" "+filename[16:18]+" UTC")
+    plt.colorbar(ticks=np.arange(0,10,1), label="STP Value")
+    ax.set_aspect('auto', adjustable=None)
+
+    if sites is not None:
+        for s in range(0,len(sites[0])):
+            name = sites[0][s]
+            lat = sites[1][s]
+            lon = sites[2][s]
+            val = round(float(sites[3][s]),2)
+            plt.plot(lon, lat, markersize=3, marker='o', color='k')
+            plt.text(lon, lat+0.5, name+": "+str(val),
+                     horizontalalignment='center',
+                     transform=ccrs.PlateCarree(),
+                     fontsize=10,
+                     weight='bold')
+
+    plt.show()
+
+
+
+
+
+
 def sortByDate(date, lat, lon, stpe, stpf, site):
     # This will read in the data and organize it such that
     # each date contains all lat/lon points, values, and site IDs
@@ -319,6 +447,9 @@ files = sortByDate(date, lat, lon, stpe, stpf, site)
 # I'm not super thrilled about this methodology right now.
 # It feels kinda sloppy and I'm not convinced there isn't some mix-matching going on.
 # Try to find a more robust way to get the meso data AND match it to the corresponding obs.
+
+eff_errors = []
+fix_errors = []
 for key, values in files.items():
 
     stpe_diff = []
@@ -326,22 +457,43 @@ for key, values in files.items():
 
     Mstpe, Mstpf = getMesoValues(NCdir,"sfcoalite_"+key+".nc",values[0],values[1])
 
+    # For testing
+    # mini_sites = [values[4], values[0], values[1], Mstpe]
+    # print(key)
+    # print(values[4])
+    # print(values[2])
+    # print(Mstpe)
+    # plotSTP(NCdir,"sfcoalite_"+key+".nc",sites=mini_sites)
+
     for val in range(0,len(Mstpe)):
         mesoE.append(Mstpe[val])
         mesoF.append(Mstpf[val])
         obsE.append(values[2][val])
         obsF.append(values[3][val])
-
-
-    for i in range(0,len(values[0])):
-        stpe_err = values[2][i] - Mstpe[i]
-        stpf_err = values[3][i] - Mstpf[i]
+        stpe_err = values[2][val] - Mstpe[val]
+        stpf_err = values[3][val] - Mstpf[val]
         stpe_diff.append(stpe_err)
         stpf_diff.append(stpf_err)
+        eff_errors.append(stpe_err)
+        fix_errors.append(stpf_err)
+
+
+    # for i in range(0,len(values[0])):
+    #     stpe_err = values[2][i] - Mstpe[i]
+    #     stpf_err = values[3][i] - Mstpf[i]
+    #     stpe_diff.append(stpe_err)
+    #     stpf_diff.append(stpf_err)
+    #     eff_errors.append(stpe_err)
+    #     fix_errors.append(stpf_err)
 
     files[key] = [values[0], values[1], values[2], values[3], values[4], Mstpe, Mstpf, stpe_diff, stpf_diff]
 
 #print(len(obsE),len(mesoE))
 
-plotOvM(obsE,obsF,mesoE,mesoF)
+#plotOvM(obsE,obsF,mesoE,mesoF)
+#eff_errors = [x for x in eff_errors if (x < 100.0)] # These filters are here as a quick fix
+#fix_errors = [y for y in fix_errors if (y < 100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
+
+#plotSTPerrorDist(eff_errors,fix_errors)
+errorByValue(obsE,eff_errors,obsF,fix_errors)
 

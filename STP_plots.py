@@ -105,10 +105,14 @@ def dataReadIn(DataDirectory,filename):
 
 def plotSTPerrorDist(stpe,stpf):
 
+    stpe = np.asarray(stpe)
+    stpf = np.asarray(stpf)
+
     bins = np.arange(-10,10,0.1)
     hist,bin_edge = np.histogram(stpe,bins,(-10.0,10.0))
     ymax = np.max(hist) + 10
     yloc = ymax - 10
+    xloc = 0.5
 
     plt.figure(1)
     plt.subplot(1,2,1)
@@ -119,7 +123,9 @@ def plotSTPerrorDist(stpe,stpf):
     plt.xlim(-6.0, 6.0)
     plt.xticks(np.arange(-6,6,1))
     plt.ylim(0,ymax)
-    #plt.text(7.0,yloc,"n = "+str(len(stpe)))
+    plt.text(xloc,yloc,"Mean = "+str(round(np.mean(stpe),2)))
+    plt.text(xloc,yloc-5,"St. Dev = "+str(round(np.std(stpe),2)))
+    plt.text(xloc,yloc-10,"RMSD ="+str(round(np.sqrt(np.mean(stpe**2.0)),2)))
     plt.grid(color='gray',alpha=0.65)
 
     plt.subplot(1,2,2)
@@ -129,7 +135,9 @@ def plotSTPerrorDist(stpe,stpf):
     plt.xlim(-6., 6)
     plt.xticks(np.arange(-6., 6., 1))
     plt.ylim(0,ymax)
-    #plt.text(7.0,yloc,"n = "+str(len(stpf)))
+    plt.text(xloc,yloc,"Mean = "+str(round(np.mean(stpf),2)))
+    plt.text(xloc,yloc-5,"St. Dev = "+str(round(np.std(stpf),2)))
+    plt.text(xloc,yloc-10,"RMSD ="+str(round(np.sqrt(np.mean(stpf**2.0)),2)))
     plt.grid(color='gray',alpha=0.65)
 
     plt.show()
@@ -470,8 +478,8 @@ for key, values in files.items():
         mesoF.append(Mstpf[val])
         obsE.append(values[2][val])
         obsF.append(values[3][val])
-        stpe_err = values[2][val] - Mstpe[val]
-        stpf_err = values[3][val] - Mstpf[val]
+        stpe_err = Mstpe[val] - values[2][val]
+        stpf_err = Mstpf[val] - values[3][val]
         stpe_diff.append(stpe_err)
         stpf_diff.append(stpf_err)
         eff_errors.append(stpe_err)
@@ -491,9 +499,9 @@ for key, values in files.items():
 #print(len(obsE),len(mesoE))
 
 #plotOvM(obsE,obsF,mesoE,mesoF)
-#eff_errors = [x for x in eff_errors if (x < 100.0)] # These filters are here as a quick fix
-#fix_errors = [y for y in fix_errors if (y < 100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
+eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
+fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
 
-#plotSTPerrorDist(eff_errors,fix_errors)
-errorByValue(obsE,eff_errors,obsF,fix_errors)
+plotSTPerrorDist(eff_errors,fix_errors)
+#errorByValue(obsE,eff_errors,obsF,fix_errors)
 

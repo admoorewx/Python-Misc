@@ -2,6 +2,7 @@ import csv
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
 import cartopy
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -10,14 +11,15 @@ from netCDF4 import Dataset
 
 
 # For home computer
-#DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
-#outdir = 'H:\\Research\\' # directory where you want output images to be saved to
+DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
+outdir = 'H:\\Research\\' # directory where you want output images to be saved to
+NCdir = 'H:\\Research\\STP\sfcoalite_data\\'
 filename = 'STP_soundings.csv'
 
 # For my laptop
-DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
-NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
-outdir = DataDirectory
+# DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
+# NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
+# outdir = DataDirectory
 
 
 #######################################################################################################################
@@ -40,6 +42,10 @@ def getMesoValues(DataDirectory,filename,lat_list,lon_list):
         for l,L in enumerate(lat_list):
             STPF0 = griddata(points, STPF, (lon_list[l],L))
             STPE0 = griddata(points, STPE, (lon_list[l], L))
+
+            if STPE0 > 100.0 or STPE0 < -100.0:
+               STPE0 = 0.0 # Right now I'm working under the assumption that the
+                            # MesoA data is masked below a certain value, hence these should be set to zero.
             stpe_list.append(STPE0)
             stpf_list.append(STPF0)
 
@@ -64,6 +70,9 @@ def getMesoValues(DataDirectory,filename,lat_list,lon_list):
         for l, L in enumerate(lat_list):
             STPF0 = griddata(points, STPF, (lon_list[l], L))
             STPE0 = griddata(points, STPE, (lon_list[l], L))
+            if STPE0 > 100.0 or STPE0 < -100.0:
+               STPE0 = 0.0 # Right now I'm working under the assumption that the
+                            # MesoA data is masked below a certain value, hence these should be set to zero.
             stpe_list.append(STPE0)
             stpf_list.append(STPF0)
 
@@ -118,7 +127,7 @@ def plotSTPerrorDist(stpe,stpf):
     plt.subplot(1,2,1)
     plt.hist(stpe, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
     plt.title("Effective Layer STP Error Distribution",fontsize=10)
-    plt.xlabel("Error")
+    plt.xlabel("Error (Mesoanalysis - Observed)")
     plt.ylabel("Frequency")
     plt.xlim(-6.0, 6.0)
     plt.xticks(np.arange(-6,6,1))
@@ -131,7 +140,7 @@ def plotSTPerrorDist(stpe,stpf):
     plt.subplot(1,2,2)
     plt.hist(stpf, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
     plt.title("Fixed Layer STP Error Distribution",fontsize=10)
-    plt.xlabel("Error")
+    plt.xlabel("Error (Mesoanalysis - Observed)")
     plt.xlim(-6., 6)
     plt.xticks(np.arange(-6., 6., 1))
     plt.ylim(0,ymax)
@@ -166,7 +175,7 @@ def plotSTPDist(stpe,stpf):
     plt.figure(1)
     plt.subplot(1,2,1)
     plt.hist(stpe, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
-    plt.title("Effective Layer STP Distribution",fontsize=10)
+    plt.title("Observed Effective Layer STP Distribution",fontsize=10)
     plt.xlabel("STP Value")
     plt.ylabel("Frequency")
     plt.xlim(-0.5, 14)
@@ -177,7 +186,7 @@ def plotSTPDist(stpe,stpf):
 
     plt.subplot(1,2,2)
     plt.hist(stpf, bins=bins, density=False, align='left', rwidth=0.75, color='steelblue')
-    plt.title("Fixed Layer STP Distribution",fontsize=10)
+    plt.title("Observed Fixed Layer STP Distribution",fontsize=10)
     plt.xlabel("STP Value")
     plt.xlim(-0.5, 14)
     plt.xticks(np.arange(0, 14, 1))
@@ -191,7 +200,7 @@ def plotSTPDist(stpe,stpf):
 
     plt.figure(2)
     plt.boxplot([stpe,stpf], labels=["Effective Layer", "Fixed Layer"])
-    plt.title("STP Distribution \n n = "+str(len(stpe)),fontsize=10)
+    plt.title("Observed STP Distribution \n n = "+str(len(stpe)),fontsize=10)
     plt.ylabel("STP Value")
 
     plt.show()
@@ -377,6 +386,7 @@ def plotSTP(DataDirectory,filename,sites=None):
 
     # add hi-res coastline (for islands)
     ax.coastlines(resolution='50m', color='black', linewidth=1)
+    ax.coastlines(resolution='50m', color='black', linewidth=1)
     # add hi-res land cover
     land_10m = cartopy.feature.NaturalEarthFeature('physical', 'land', '10m')
     ax.add_feature(land_10m, zorder=0, facecolor='white', edgecolor='white', linewidth=1)
@@ -390,13 +400,24 @@ def plotSTP(DataDirectory,filename,sites=None):
     stpf = data.variables['SIGT'][:] # Fixed layer STP
     stpe = data.variables['STPC'][:] # Eff. Layer STP
 
-    plt.contourf(lons, lats, stpe, np.arange(0.1,10,0.1),
+    # CON = plt.contour(lons, lats, stpe, np.arange(0.0, 11.0, 0.5), color='white')
+    # plt.clabel(CON,np.arange(0.0, 11.0, 0.5),colors='white',inline=True)
+    plt.contourf(lons, lats, stpe,
+                 levels=np.arange(0.1,10.1,0.1),
                  cmap='nipy_spectral',
-                 alpha=0.95,
+                 alpha=0.90,
                  transform=ccrs.PlateCarree())
 
+    plt.contourf(lons, lats, stpe,
+                 levels=np.arange(0.1,10.1,0.1),
+                 cmap='nipy_spectral',
+                 alpha=0.90,
+                 transform=ccrs.PlateCarree())
+
+
+
     plt.title("RAP SFC OA Effective Layer STP valid at "+filename[12:14]+"/"+filename[14:16]+"/"+filename[10:12]+" "+filename[16:18]+" UTC")
-    plt.colorbar(ticks=np.arange(0,10,1), label="STP Value")
+    plt.colorbar(ticks=np.arange(0,11,1), label="STP Value")
     ax.set_aspect('auto', adjustable=None)
 
     if sites is not None:
@@ -406,16 +427,14 @@ def plotSTP(DataDirectory,filename,sites=None):
             lon = sites[2][s]
             val = round(float(sites[3][s]),2)
             plt.plot(lon, lat, markersize=3, marker='o', color='k')
-            plt.text(lon, lat+0.5, name+": "+str(val),
+            text = plt.text(lon, lat+0.5, name+": "+str(val),
                      horizontalalignment='center',
                      transform=ccrs.PlateCarree(),
                      fontsize=10,
                      weight='bold')
+            text.set_path_effects([path_effects.Stroke(linewidth=1, foreground='white'),path_effects.Normal()])
 
     plt.show()
-
-
-
 
 
 
@@ -440,11 +459,13 @@ def sortByDate(date, lat, lon, stpe, stpf, site):
             files[date_string] = [[lat[d]],[lon[d]],[stpe[d]],[stpf[d]],[site[d]]]
     return files
 
+####################################### end of subroutines #################################################
+
 date, site, lat, lon, stpe, stpf = dataReadIn(DataDirectory,filename)
-#plotTemporalDist(date)
-#plotSTPDist(stpe,stpf)
-#site_list = sortSites(site,lat,lon)
-#plotSoundingMap(site_list)
+plotTemporalDist(date)
+plotSTPDist(stpe,stpf)
+site_list = sortSites(site,lat,lon)
+plotSoundingMap(site_list)
 
 obsE = []
 obsF = []
@@ -463,7 +484,14 @@ for key, values in files.items():
     stpe_diff = []
     stpf_diff = []
 
+    #print(values[4])
     Mstpe, Mstpf = getMesoValues(NCdir,"sfcoalite_"+key+".nc",values[0],values[1])
+
+    for m in Mstpe:
+        if m > 100.0 or m < -100.0:
+            print("ERRANT VALUE- Plotting")
+            mini_sites = [values[4], values[0], values[1], Mstpe]
+            plotSTP(NCdir, "sfcoalite_" + key + ".nc", sites=mini_sites)
 
     # For testing
     # mini_sites = [values[4], values[0], values[1], Mstpe]
@@ -484,7 +512,9 @@ for key, values in files.items():
         stpf_diff.append(stpf_err)
         eff_errors.append(stpe_err)
         fix_errors.append(stpf_err)
-
+        # if stpe_err < -10.0 or stpf_err < -10.0:
+        #     print(key,values[4][val], stpf_err, stpe_err)
+        #     print(Mstpe[val], Mstpf[val], values[2][val], values[3][val])
 
     # for i in range(0,len(values[0])):
     #     stpe_err = values[2][i] - Mstpe[i]
@@ -496,12 +526,12 @@ for key, values in files.items():
 
     files[key] = [values[0], values[1], values[2], values[3], values[4], Mstpe, Mstpf, stpe_diff, stpf_diff]
 
-#print(len(obsE),len(mesoE))
 
-#plotOvM(obsE,obsF,mesoE,mesoF)
+
+plotOvM(obsE,obsF,mesoE,mesoF)
 eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
 fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
 
 plotSTPerrorDist(eff_errors,fix_errors)
-#errorByValue(obsE,eff_errors,obsF,fix_errors)
+errorByValue(obsE,eff_errors,obsF,fix_errors)
 

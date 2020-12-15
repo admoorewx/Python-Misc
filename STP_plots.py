@@ -11,15 +11,24 @@ from netCDF4 import Dataset
 
 
 # For home computer
-DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
-outdir = 'H:\\Research\\' # directory where you want output images to be saved to
-NCdir = 'H:\\Research\\STP\sfcoalite_data\\'
+# DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
+# outdir = 'H:\\Research\\' # directory where you want output images to be saved to
+# NCdir = 'H:\\Research\\STP\sfcoalite_data\\'
 filename = 'STP_soundings.csv'
 
 # For my laptop
-# DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
-# NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
-# outdir = DataDirectory
+DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
+NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
+outdir = DataDirectory
+
+
+coastal = ["BRO", "CRP", "LIX", "LCH", "TLH", "TBW", "KEY", "MFL", "XMR", "JAX", "CHS", "MHX", "WAL", "OKX"]
+splains = ["OUN", "AMA", "FWD", "LMN", "MAF", "DEL", "SHV", "DRT", "ABQ"]
+cplains = ["DDC", "TOP", "SGF", "OAX", "LBF", "DNR"]
+nplains = ["RAP", "BIS", "ABR", "MPX", "INL"]
+southeast  = ["LZK", "JAN", "FFC", "BMX", "BNA"]
+midwest = ["DVN", "ILX", "ILN", "GRB", "APX", "DTX"]
+northeast = ["PIT", "GSO", "RNK", "IAD", "BUF", "ALB", "GYX"]
 
 
 #######################################################################################################################
@@ -459,13 +468,71 @@ def sortByDate(date, lat, lon, stpe, stpf, site):
             files[date_string] = [[lat[d]],[lon[d]],[stpe[d]],[stpf[d]],[site[d]]]
     return files
 
+
+
+def plotByRegion(data):
+    # INPUT: dictionary formatted as: files[key] = [lats, lons, obsE, obsF, siteID, Mstpe, Mstpf, stpe_diff, stpf_diff]
+    coast = []
+    se = []
+    sp = []
+    npl = []
+    cp = []
+    mw = []
+    ne = []
+    for key, value in data.items():
+        for i in range(0,len(value[0])):
+            site = value[4][i]
+            if site in coastal:
+                coast.append([value[7][i], value[8][i]])
+            elif site in splains:
+                sp.append([value[7][i], value[8][i]])
+            elif site in cplains:
+                cp.append([value[7][i], value[8][i]])
+            elif site in nplains:
+                npl.append([value[7][i], value[8][i]])
+            elif site in midwest:
+                mw.append([value[7][i], value[8][i]])
+            elif site in southeast:
+                se.append([value[7][i], value[8][i]])
+            elif site in northeast:
+                ne.append([value[7][i], value[8][i]])
+            else:
+                print("Site "+site+" is not in any list.")
+
+    coast = np.asarray(coast)
+    mw = np.asarray(mw)
+    sp = np.asarray(sp)
+    npl = np.asarray(npl)
+    cp = np.asarray(cp)
+    se = np.asarray(se)
+    ne = np.asarray(ne)
+
+    labels = ["Coastal\nN = "+str(len(cp)), "S. Plains\nN = "+str(len(sp)), "C. Plains\nN = "+str(len(cp)), "N. Plains\nN = "+str(len(npl)), "Midwest\nN = "+str(len(mw)), "S. E.\nN = "+str(len(se)), "N. E.\nN = "+str(len(ne))]
+
+    eff_boxes = [coast[:,0], sp[:,0], cp[:,0], npl[:,0], mw[:,0], se[:,0], ne[:,0]]
+    fix_boxes = [coast[:, 1], sp[:, 1], cp[:, 1], npl[:, 1], mw[:, 1], se[:, 1], ne[:, 1]]
+
+
+    plt.figure(1)
+    plt.subplot(1,2,1)
+    plt.boxplot(eff_boxes, labels=labels)
+    plt.ylim(-6,6)
+    plt.title("Effective STP Error by Region")
+
+    plt.subplot(1,2,2)
+    plt.boxplot(fix_boxes, labels=labels)
+    plt.ylim(-6,6)
+    plt.title("Fixed-Layer STP Error by Region")
+
+    plt.show()
+
 ####################################### end of subroutines #################################################
 
 date, site, lat, lon, stpe, stpf = dataReadIn(DataDirectory,filename)
-plotTemporalDist(date)
-plotSTPDist(stpe,stpf)
-site_list = sortSites(site,lat,lon)
-plotSoundingMap(site_list)
+#plotTemporalDist(date)
+#plotSTPDist(stpe,stpf)
+#site_list = sortSites(site,lat,lon)
+#plotSoundingMap(site_list)
 
 obsE = []
 obsF = []
@@ -527,11 +594,11 @@ for key, values in files.items():
     files[key] = [values[0], values[1], values[2], values[3], values[4], Mstpe, Mstpf, stpe_diff, stpf_diff]
 
 
+plotByRegion(files)
 
-plotOvM(obsE,obsF,mesoE,mesoF)
-eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
-fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
-
-plotSTPerrorDist(eff_errors,fix_errors)
-errorByValue(obsE,eff_errors,obsF,fix_errors)
+#plotOvM(obsE,obsF,mesoE,mesoF)
+#eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
+#fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
+#plotSTPerrorDist(eff_errors,fix_errors)
+#errorByValue(obsE,eff_errors,obsF,fix_errors)
 

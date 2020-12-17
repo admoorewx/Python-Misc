@@ -11,15 +11,15 @@ from netCDF4 import Dataset
 
 
 # For home computer
-# DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
-# outdir = 'H:\\Research\\' # directory where you want output images to be saved to
-# NCdir = 'H:\\Research\\STP\sfcoalite_data\\'
+DataDirectory = 'H:\\Research\\STP\\' # Path to where your metar data is stored
+outdir = 'H:\\Research\\' # directory where you want output images to be saved to
+NCdir = 'H:\\Research\\STP\sfcoalite_data\\'
 filename = 'STP_soundings.csv'
 
 # For my laptop
-DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
-NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
-outdir = DataDirectory
+#DataDirectory = 'C:\\Users\\admoo\\Desktop\\Projects\\'
+#NCdir = 'C:\\Users\\admoo\\Desktop\\Projects\\sfcoalite_data\\'
+#outdir = DataDirectory
 
 
 coastal = ["BRO", "CRP", "LIX", "LCH", "TLH", "TBW", "KEY", "MFL", "XMR", "JAX", "CHS", "MHX", "WAL", "OKX"]
@@ -28,7 +28,7 @@ cplains = ["DDC", "TOP", "SGF", "OAX", "LBF", "DNR"]
 nplains = ["RAP", "BIS", "ABR", "MPX", "INL"]
 southeast  = ["LZK", "JAN", "FFC", "BMX", "BNA"]
 midwest = ["DVN", "ILX", "ILN", "GRB", "APX", "DTX"]
-northeast = ["PIT", "GSO", "RNK", "IAD", "BUF", "ALB", "GYX"]
+northeast = ["PIT", "GSO", "RNK", "IAD", "BUF", "ALB", "GYX", "CHH"]
 
 
 #######################################################################################################################
@@ -215,7 +215,78 @@ def plotSTPDist(stpe,stpf):
     plt.show()
 
 
-def errorByValue(eff_vals,eff_error,fix_vals,fix_error):
+def errorByValue(files):
+
+    eff_vals = []
+    eff_error = []
+    fix_vals = []
+    fix_error = []
+
+
+    zeroe = []
+    onee = []
+    twoe = []
+    threee = []
+    foure = []
+    fivee = []
+    sixpe = []
+
+    zerof = []
+    onef = []
+    twof = []
+    threef = []
+    fourf = []
+    fivef = []
+    sixpf = []
+
+
+    for key,value in files.items():
+        for v in range(0,len(value[0])):
+            eff_vals.append(value[2][v])
+            fix_vals.append(value[3][v])
+            eff_error.append(value[5][v] - value[2][v])
+            fix_error.append(value[6][v] - value[3][v])
+
+            if eff_vals[-1] <= 1.0:
+                zeroe.append(eff_error[-1])
+            elif eff_vals[-1] >= 1.1 and eff_vals[-1] <= 2.0:
+                onee.append(eff_error[-1])
+            elif eff_vals[-1] >= 2.1 and eff_vals[-1] <= 3.0:
+                twoe.append(eff_error[-1])
+            elif eff_vals[-1] >= 3.1 and eff_vals[-1] <= 4.0:
+                threee.append(eff_error[-1])
+            elif eff_vals[-1] >= 4.1 and eff_vals[-1] <= 5.0:
+                foure.append(eff_error[-1])
+            elif eff_vals[-1] >= 5.1 and eff_vals[-1] <= 6.0:
+                fivee.append(eff_error[-1])
+            else:
+                sixpe.append(eff_error[-1])
+            eff_boxes = [zeroe, onee, twoe, threee, foure, fivee, sixpe]
+            eff_labels = ["0.0-1.0\nN = "+str(len(zeroe)), "1.1-2.0\nN = "+str(len(onee)), "2.1-3.0\nN = "+str(len(twoe)),
+                      "3.1-4.0\nN = "+str(len(threee)), "4.1-5.0\nN = "+str(len(foure)), "5.1-6.0\nN = "+str(len(fivee)), "6.1+\nN = "+str(len(sixpe))]
+
+            if fix_vals[-1] <= 1.0:
+                zerof.append(fix_error[-1])
+            elif fix_vals[-1] >= 1.1 and fix_vals[-1] <= 2.0:
+                onef.append(fix_error[-1])
+            elif fix_vals[-1] >= 2.1 and fix_vals[-1] <= 3.0:
+                twof.append(fix_error[-1])
+            elif fix_vals[-1] >= 3.1 and fix_vals[-1] <= 4.0:
+                threef.append(fix_error[-1])
+            elif fix_vals[-1] >= 4.1 and fix_vals[-1] <= 5.0:
+                fourf.append(fix_error[-1])
+            elif fix_vals[-1] >= 5.1 and fix_vals[-1] <= 6.0:
+                fivef.append(fix_error[-1])
+            else:
+                sixpf.append(fix_error[-1])
+            fix_boxes = [zerof, onef, twof, threef, fourf, fivef, sixpf]
+            fix_labels = ["0.0-1.0\nN = " + str(len(zerof)), "1.1-2.0\nN = " + str(len(onef)),
+                      "2.1-3.0\nN = " + str(len(twof)),
+                      "3.1-4.0\nN = " + str(len(threef)), "4.1-5.0\nN = " + str(len(fourf)),
+                      "5.1-6.0\nN = " + str(len(fivef)), "6.1+\nN = " + str(len(sixpf))]
+
+
+    plt.figure(1)
 
     plt.scatter(eff_vals,eff_error,marker='x',color='r',label="Eff. Layer")
     plt.scatter(fix_vals,fix_error,marker='x',color='b',label="Fixed Layer")
@@ -223,11 +294,98 @@ def errorByValue(eff_vals,eff_error,fix_vals,fix_error):
     plt.xlim(0,14)
     plt.xticks(np.arange(0, 14, 1))
     plt.ylim(-6,6)
-    plt.ylabel("STP Error")
+    plt.ylabel("STP Error (Mesoanalysis - Observed)")
     plt.xlabel("Observed STP Value")
     plt.title("STP Error by Observed Value")
     plt.legend()
     plt.show()
+
+    plt.figure(2)
+    plt.subplot(1,2,1)
+    plt.boxplot(eff_boxes,labels=eff_labels)
+    plt.title("Effective STP Error Distribution by Value")
+    plt.xlabel("Observed STP Value")
+    plt.ylabel("Error (Analysis - Observed)")
+    plt.ylim(-7,7)
+
+    plt.subplot(1,2,2)
+    plt.boxplot(fix_boxes,labels=fix_labels)
+    plt.title("Fixed-Layer STP Error Distribution by Value")
+    plt.xlabel("Observed STP Value")
+    #plt.ylabel("Error (Analysis - Observed)")
+    plt.ylim(-7,7)
+    plt.show()
+
+
+def errorByValue2(files):
+
+    eff_vals = []
+    eff_error = []
+    fix_vals = []
+    fix_error = []
+
+    zeroe = []
+    onee = []
+    twoe = []
+    threee = []
+
+    zerof = []
+    onef = []
+    twof = []
+    threef = []
+
+    for key,value in files.items():
+        for v in range(0,len(value[0])):
+            eff_vals.append(value[2][v])
+            fix_vals.append(value[3][v])
+            eff_error.append(value[5][v] - value[2][v])
+            fix_error.append(value[6][v] - value[3][v])
+
+            if eff_vals[-1] <= 1.0:
+                zeroe.append(eff_error[-1])
+            elif eff_vals[-1] >= 1.1 and eff_vals[-1] <= 2.0:
+                onee.append(eff_error[-1])
+            elif eff_vals[-1] >= 2.1 and eff_vals[-1] <= 3.0:
+                twoe.append(eff_error[-1])
+            else:
+                threee.append(eff_error[-1])
+
+            eff_boxes = [zeroe, onee, twoe, threee]
+            eff_labels = ["0.0-1.0\nN = "+str(len(zeroe)), "1.1-2.0\nN = "+str(len(onee)), "2.1-3.0\nN = "+str(len(twoe)),
+                      "3.1+\nN = "+str(len(threee))]
+
+            if fix_vals[-1] <= 1.0:
+                zerof.append(fix_error[-1])
+            elif fix_vals[-1] >= 1.1 and fix_vals[-1] <= 2.0:
+                onef.append(fix_error[-1])
+            elif fix_vals[-1] >= 2.1 and fix_vals[-1] <= 3.0:
+                twof.append(fix_error[-1])
+            else:
+                threef.append(fix_error[-1])
+
+            fix_boxes = [zerof, onef, twof, threef]
+            fix_labels = ["0.0-1.0\nN = " + str(len(zerof)), "1.1-2.0\nN = " + str(len(onef)),
+                      "2.1-3.0\nN = " + str(len(twof)),
+                      "3.1+\nN = " + str(len(threef))]
+
+
+    plt.figure(1)
+    plt.subplot(1,2,1)
+    plt.boxplot(eff_boxes,labels=eff_labels)
+    plt.title("Effective STP Error Distribution by Value")
+    plt.xlabel("Observed STP Value")
+    plt.ylabel("Error (Analysis - Observed)")
+    plt.ylim(-7,7)
+
+    plt.subplot(1,2,2)
+    plt.boxplot(fix_boxes,labels=fix_labels)
+    plt.title("Fixed-Layer STP Error Distribution by Value")
+    plt.xlabel("Observed STP Value")
+    #plt.ylabel("Error (Analysis - Observed)")
+    plt.ylim(-7,7)
+    plt.show()
+
+
 
 
 
@@ -594,11 +752,11 @@ for key, values in files.items():
     files[key] = [values[0], values[1], values[2], values[3], values[4], Mstpe, Mstpf, stpe_diff, stpf_diff]
 
 
-plotByRegion(files)
+
 
 #plotOvM(obsE,obsF,mesoE,mesoF)
 #eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
 #fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
 #plotSTPerrorDist(eff_errors,fix_errors)
-#errorByValue(obsE,eff_errors,obsF,fix_errors)
-
+errorByValue2(files)
+#plotByRegion(files)

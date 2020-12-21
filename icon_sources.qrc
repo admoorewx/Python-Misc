@@ -1,0 +1,15 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="icons">
+    <file alias="cactus.png">fugueIcons/icons/cactus.png</file>
+    <file alias="bug.png">fugueIcons/icons/bug.png</file>
+    <file alias="forward.png">fugueIcons/icons/arrow.png</file>
+    <file alias="back.png">fugueIcons/icons/arrow-180.png</file>
+    <file alias="reload.png">fugueIcons/icons/arrow-circle-135.png</file>
+    <file alias="home.png">fugueIcons/icons/home.png</file>
+    <file alias="globe.png">fugueIcons/icons/globe-green.png</file>
+    <file alias="stop.png">fugueIcons/icons/cross-octagon.png</file>
+    <file alias="locked.png">fugueIcons/icons/lock-ssl.png</file>
+    <file alias="unlocked.png">fugueIcons/icons/lock-unlock.png</file>
+  </qresource>
+</RCC>

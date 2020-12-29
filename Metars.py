@@ -4,6 +4,15 @@ from bs4 import BeautifulSoup
 import numpy as np
 import time
 
+"""
+TO DO: 
+- Change the METAR class to where instead of having a single attribute of rawObs it has several attributes for 
+  each obs value (i.e. self.temp, self.dewp, self.wx, etc...)
+- Change the bulkMetar method to pass in the specific attributes
+- Change the METAR subroutines such that they can read in a rawObs string and parse out the individual attributes
+"""
+
+
 start = time.time()
 sites = ["KOKC", "KOUN", "KGFK"]
 testLat = 32.0
@@ -14,6 +23,15 @@ class METAR:
         self.lat = lat
         self.lon = lon
         self.siteID = siteID
+        self.times = []
+        self.temps = []
+        self.dewps = []
+        self.wdirs = []
+        self.gusts = []
+        self.wx    = []
+        self.press = []
+        self.clouds = []
+        self.vis    = []
         self.rawObs = []
         if obsArray is not None:
             self.rawObs.append(obsArray)
@@ -24,7 +42,12 @@ class METAR:
             f'Lon: {self.lon}\n' \
             f'Number of observations: {len(self.rawObs)}\n'
 
-    def addObservation(self,obsArray):
+    def addTemp(self,temp):
+        self.temps.append(temp)
+    def addDewp(self,dewp):
+        self.dewp.append(dewp)
+
+    def addRawObservation(self,obsArray):
         if obsArray is not None:
             self.rawObs.append(obsArray)
 
@@ -93,31 +116,66 @@ class METAR:
         return dewp
 
     def getWind(self):
+        """
+        In it's current form this routine will check to see how many obs are in the rawObs list
+        and then return the wind  direction, wind speed, and wind gusts as either three string values if
+        there's only one ob in rawObs, or as as three lists of strings if there is more than one ob in rawObs.
+        There is a lot of filtering done to remove missing and bad wind reports, and I'm not sure if this is the
+        best methodology. But hey, it works for now.
+        """
         wspds = []
         wdirs = []
         gusts = []
+        bad_chars = ["/","M","A","BK"] # list of bad characters that may end up in the raw_wind field if the wind is missing.
         for obs in self.rawObs:
             try:
                 if "KT" not in obs[2]: # Make sure this isn't an "auto" or "cor"
                     raw_wind = obs[3]
                 else:
                     raw_wind = obs[2]
-                wdir = raw_wind[0:3]
-                wspd = raw_wind[3:5]
-                if len(raw_wind) > 7:
-                    gust = raw_wind[6:8]
+                if any(item in raw_wind for item in bad_chars):
+                    wdir = None
+                    wspd = None
+                    gust = None
                 else:
-                    gust = "00"
-                if "E" not in wdir and "/" not in wdir:
-                    wdirs.append(wdir)
-                    wspds.append(float(wspd))
-                    gusts.append(float(gust))
+                    wdir = raw_wind[0:3]
+                    wspd = raw_wind[3:5]
+                    if len(raw_wind) > 7:
+                        gust = raw_wind[6:8]
+                    else:
+                        gust = "00"
+                wdirs.append(wdir)
+                wspds.append(float(wspd))
+                gusts.append(float(gust))
             except:
                 pass
         if len(self.rawObs) == 1:
             return wdir, wspd, gust
         else:
             return wdirs, wspds, gusts
+
+
+    def getWx(self):
+        for obs in self.rawObs:
+            loc_bools = ["SM" in item for item in obs]
+            loc = np.where(loc_bools)[0]
+            if len(loc) == 0:
+                wx_loc = None # This assumes that if there is no vis observation then there's no wx ob, which may not be entirely true...
+            elif len(loc) > 1:
+                wx_loc = loc[-1] + 1
+            else:
+                wx_loc = loc[0] + 1
+
+            if wx_loc != None:
+                print(obs)
+                print(obs[wx_loc])
+                print("")
+
+            # for item in obs:
+            #     if "SM" in item:
+            #         print(item)
+            #print(obs[visIndex])
+
 
 
 
@@ -189,8 +247,7 @@ def singleMetar(site,numHours):
 
 obs_list = bulkMetars()
 for ob in obs_list:
-    temps = ob.getWind()
-    print(temps)
+    ob.getWx()
 
 
 end = time.time()

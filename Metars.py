@@ -27,10 +27,12 @@ class METAR:
         self.temps = []
         self.dewps = []
         self.wdirs = []
+        self.wspds = []
         self.gusts = []
         self.wx    = []
         self.press = []
         self.clouds = []
+        self.ceilings = []
         self.vis    = []
         self.rawObs = []
         if obsArray is not None:
@@ -42,14 +44,32 @@ class METAR:
             f'Lon: {self.lon}\n' \
             f'Number of observations: {len(self.rawObs)}\n'
 
+    # routines for adding in variables
     def addTemp(self,temp):
         self.temps.append(temp)
     def addDewp(self,dewp):
         self.dewp.append(dewp)
-
     def addRawObservation(self,obsArray):
         if obsArray is not None:
             self.rawObs.append(obsArray)
+    def addTime(self,timestring):
+        self.times.append(timestring)
+    def addWdir(self,wdir):
+        self.wdirs.append(wdir)
+    def addWspd(self,wspd):
+        self.wspds.append(wspd)
+    def addGust(self,gust):
+        self.gusts.append(gust)
+    def addWx(self,wxstring):
+        self.wx.append(wxstring)
+    def addPres(self,pres):
+        self.press.append(pres)
+    def addVis(self,visby):
+        self.vis.append(visby)
+    def addClouds(self,cloudcover):
+        self.clouds.append(cloudcover)
+    def addCeilings(self,ceilString):
+        self.ceilings.append(ceilString)
 
     def toFloat(self,t):
         # Takes in a temperature string (such as "M04") and converts it to a float number (such as -4.0)
@@ -59,33 +79,34 @@ class METAR:
             t = 0.0 - float(t[1:])
         return t
 
-    def getTemps(self):
-        temp = []
-        for obs in self.rawObs: # loop through each observation
-            for item in obs: # loop through each data item in the observation
-                # This filter checks for:
-                # 1) looks for the "/" present in all T/Td obs
-                # 2) Makes sure the char length is less than 8 (always will be unless the world has ended)
-                # 3) Ensures the "/" is roughly in the correct spot (filters out some RMK codes)
-                # 4) Ensures that any observation with SM (i.e. M1/4SM) is not included
-                # 5) Ensures that the "/" only occurs once - excludes some RMK codes
-                if "/" in item \
-                        and len(item) >= 3 \
-                        and len(item) <= 7 \
-                        and (item.index("/") > 1) \
-                        and (item.index("/") < 4) \
-                        and "SM" not in item \
-                        and item.count("/") == 1:
-                    try:
-                        slashLoc = item.index("/")
-                        t = item[0:slashLoc]
-                        t = self.toFloat(t)
-                        temp.append(t)
-                    except:
-                        print(item)
-                        # Likely a random RMK code at this point, just ignore
-                        pass
-        return temp
+    # Retrieval routines
+    # def getTemps(self):
+    #     temp = []
+    #     for obs in self.rawObs: # loop through each observation
+    #         for item in obs: # loop through each data item in the observation
+    #             # This filter checks for:
+    #             # 1) looks for the "/" present in all T/Td obs
+    #             # 2) Makes sure the char length is less than 8 (always will be unless the world has ended)
+    #             # 3) Ensures the "/" is roughly in the correct spot (filters out some RMK codes)
+    #             # 4) Ensures that any observation with SM (i.e. M1/4SM) is not included
+    #             # 5) Ensures that the "/" only occurs once - excludes some RMK codes
+    #             if "/" in item \
+    #                     and len(item) >= 3 \
+    #                     and len(item) <= 7 \
+    #                     and (item.index("/") > 1) \
+    #                     and (item.index("/") < 4) \
+    #                     and "SM" not in item \
+    #                     and item.count("/") == 1:
+    #                 try:
+    #                     slashLoc = item.index("/")
+    #                     t = item[0:slashLoc]
+    #                     t = self.toFloat(t)
+    #                     temp.append(t)
+    #                 except:
+    #                     print(item)
+    #                     # Likely a random RMK code at this point, just ignore
+    #                     pass
+    #     return temp
 
     def getDewps(self):
         dewp = []
@@ -193,20 +214,31 @@ def bulkMetars():
     data = tree[6]
     #counter = 0 # uncomment to track # of bad obs
     for child in data:
-        try:
-            data = child.findtext('raw_text')
-            siteID = child.findtext('station_id')
-            lat = float(child.findtext('latitude'))
-            lon = float(child.findtext('longitude'))
-            obsArray = data.split(" ")
-            if obsArray[1] == "M": # This is a filter for bad data with no valid time
-                #counter = counter + 1 # uncomment to track # of bad obs
-                continue
-            else:
-                metar = METAR(siteID,lat,lon,obsArray)
-                obs_list.append(metar)
-        except:
+        #try:
+        data = child.findtext('raw_text')
+        siteID = child.findtext('station_id')
+        lat = float(child.findtext('latitude'))
+        lon = float(child.findtext('longitude'))
+        obsArray = data.split(" ")
+        temp = float(child.findtext('temp_c'))
+        dewp = float(child.findtext('dewpoint_c'))
+        wdir = float(child.findtext('wind_dir_degrees'))
+        wspd = float(child.findtext('wind_speed_kt'))
+        gust = float(child.findtext('wind_gust_kt'))
+        visby = float(child.findtext('visibility_statute_mi'))
+        pres = float(child.findtext('sea_level_pressure_mb'))
+        wxstring = child.findtext('wx_string')
+        print(gust)
+
+
+        if obsArray[1] == "M": # This is a filter for bad data with no valid time
+            #counter = counter + 1 # uncomment to track # of bad obs
             pass
+        else:
+            metar = METAR(siteID,lat,lon)
+            obs_list.append(metar)
+        #except:
+        #    pass
             # Must have encountered data with no lat/lon info! Ignore these. Uncomment for debugging info
             # siteID = child.findtext('station_id')
             # print("\nProblem finding data at site: "+siteID)
@@ -246,8 +278,7 @@ def singleMetar(site,numHours):
     return metar
 
 obs_list = bulkMetars()
-for ob in obs_list:
-    ob.getWx()
+
 
 
 end = time.time()

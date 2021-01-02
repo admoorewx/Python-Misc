@@ -3,14 +3,11 @@ import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 import numpy as np
 import time
+import sys
 
 """
 TO DO: 
-- Figure out how to parse the cloud and ceiling information
-  May be able to do something like this: 
-  <bar key="value">text</bar>
-  child.find("./bar").attrib['key']
-  returns value
+
 """
 
 
@@ -108,7 +105,7 @@ def parseAWCxml(metar,child):
     except:
         gust = np.nan
     try:
-        precip = float(child.findtext('pcp1hr_in'))
+        precip = float(child.find('precip_in').text)
     except:
         precip = 0.0
     try:
@@ -263,11 +260,11 @@ def multipleMetars(siteList):
 ########################################################################################3
 
 
-#metars = singleMetar("kokc",4)
+#metars = singleMetar("kokc",24)
 
 #print(metars)
 #print(metars.times)
-#print(metars.dewps)
+#print(metars.precip)
 
 # obs_list = multipleMetars(sites)
 # for ob in obs_list:

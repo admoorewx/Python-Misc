@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from plot_metar import plot
+from plot_meteogram import plot
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

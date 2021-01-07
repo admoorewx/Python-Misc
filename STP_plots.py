@@ -675,6 +675,7 @@ def plotByRegion(data):
     plt.subplot(1,2,1)
     plt.boxplot(eff_boxes, labels=labels)
     plt.ylim(-6,6)
+    plt.ylabel("Error (Analysis - Observed)")
     plt.title("Effective STP Error by Region")
 
     plt.subplot(1,2,2)
@@ -754,9 +755,9 @@ for key, values in files.items():
 
 
 
-#plotOvM(obsE,obsF,mesoE,mesoF)
+plotOvM(obsE,obsF,mesoE,mesoF)
 #eff_errors = [x for x in eff_errors if (x < 100.0) and (x > -100.0)] # These filters are here as a quick fix
 #fix_errors = [y for y in fix_errors if (y < 100.0) and (y > -100.0)] # since the KEY sounding is out of the meso bounds and returns an invalid #.
 #plotSTPerrorDist(eff_errors,fix_errors)
-errorByValue2(files)
+#errorByValue2(files)
 #plotByRegion(files)

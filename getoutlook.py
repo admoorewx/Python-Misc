@@ -41,7 +41,8 @@ def unzip(zfile,datadir):
         zip_ref.extractall(path)
     print("Unzipped file "+zfile+"\n")
 
-output = getDates(DataDirectory,WARfilename)
-for date in output[0:2]:
-    filename = getOutlook(date,outdir)
-    unzip(filename,outdir)
+
+# output = getDates(DataDirectory,WARfilename)
+# for date in output[0:2]:
+#     filename = getOutlook(date,outdir)
+#     unzip(filename,outdir)

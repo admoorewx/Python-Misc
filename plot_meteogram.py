@@ -106,8 +106,9 @@ def plot(site,previous):
         ax3.set_xlim(times[0],times[-1])
         ax3.grid()
 
-
+        # plot visibility
         ax4.fill_between(times,0,visb,facecolor='gray',alpha=0.50)
+        ax4.axhline(y=0.25,linestyle='--',color='b')
         ax4.set_xlim(times[0],times[-1])
         ax4.plot_date(times,visb,linestyle='solid',marker="None",color='dimgray')
         ax4.xaxis.set_major_formatter( DateFormatter('%d %H:%M'))

@@ -1,6 +1,7 @@
 import csv, os
 import requests
 import zipfile
+import datetime
 
 
 # Laptop
@@ -14,6 +15,13 @@ outdir = 'H:\\Research\\FalseAlarm\\outlooks\\shapefiles\\'
 indir = 'H:\\Research\\FalseAlarm\\outlooks\\'
 WARfilename = 'ConWarnings_2015_2018.csv'
 
+def correctDate(datestring):
+    date = datetime.datetime.strptime(datestring, "%Y%m%d%H%M")
+    if date.hour < 12:
+        date = date - datetime.timedelta(days=1)
+    new_date = datetime.datetime.strftime(date, "%Y%m%d")
+    return new_date
+
 def getDates(DataDirectory,filename):
     print("Processing file: " + DataDirectory + filename+"\n")
     output = []
@@ -21,10 +29,11 @@ def getDates(DataDirectory,filename):
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
-            if row[2][0:-4] in output:
+            date = correctDate(row[2])
+            if date in output:
                 pass
             else:
-                output.append(row[2][0:-4])
+                output.append(date)
     csv_file.close()
     return output
 
@@ -50,6 +59,6 @@ def unzip(zfile,indir,outdir):
 
 
 output = getDates(DataDirectory,WARfilename)
-for date in output[0:3]:
-    filename = getOutlook(date,indir)
-    unzip(filename,indir,outdir)
+for date in output:
+   filename = getOutlook(date,indir)
+   unzip(filename,indir,outdir)

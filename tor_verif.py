@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import cartopy.io.shapereader as shpreader
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+from owc import getShapefile,getWarnCat,plotShapefile
 
-DataDirectory = 'H:\\Research\\FalseAlarm\\' # Path to where your metar data is stored
-outdir = 'H:\\Research\\FalseAlarm\\WarningImages\\' # directory where you want output images to be saved to
+DataDirectory = 'H:\\Research\\FalseAlarm\\csv\\' # Path to where your data is stored
+outdir = 'H:\\Research\\FalseAlarm\\images\\' # directory where you want output images to be saved to
 WARfilename = 'ConWarnings_2015_2018.csv'
 LSRfilename = '2015_2018_tor.csv'
 
@@ -23,7 +24,8 @@ def dataReadIn(DataDirectory,filename):
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
-            output.append(row)
+            if len(row) > 0:
+                output.append(row)
     csv_file.close()
     return output
 
@@ -93,7 +95,7 @@ def plotWarnAndPath(path,polygon,torTime,warnTime,WFO,outdir):
     COUNTIES = cfeature.ShapelyFeature(counties, ccrs.PlateCarree())
 
     # Create the figure
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(1, figsize=(8, 9))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
     ax.background_patch.set_facecolor('lightsteelblue')
 
@@ -125,9 +127,9 @@ def plotWarnAndPath(path,polygon,torTime,warnTime,WFO,outdir):
     saveDate = datetime.datetime.strptime(warnTime,"%Y-%m-%d %H:%M:%S")
     saveTime = datetime.datetime.strftime(saveDate,"%y%m%d_%H%M")
 
+    #plt.show()
     plt.savefig(outdir+WFO+"_"+saveTime+".png")
     plt.clf()
-
 
 def createPolygon(verticies):
     points = []
@@ -140,7 +142,35 @@ def createPolygon(verticies):
     polygon = Polygon(points)
     return polygon
 
+def getCat(Warning,outlook,plot=False,date=None):
+    try:
+        polygon = createPolygon(Warning[4])
+    except:
+        polygon = createPolygon(Warning[4][0])
 
+    if plot:
+        plotShapefile(outlook,date,polygon)
+
+    print("     Trying to get category")
+    DN = getWarnCat(polygon,outlook)
+    print("     Category retrieved.")
+    if DN == 0:
+        return "NON"
+    elif DN == 2:
+        return "GNT"
+    elif DN == 3:
+        return "MGL"
+    elif DN == 4:
+        return "SLT"
+    elif DN == 5:
+        return "ENH"
+    elif DN == 6:
+        return "MOD"
+    elif DN == 8:
+        return "HIG"
+    else:
+        print("Category could not be determined!")
+        return None
 
 def checkForLSR(Warning,Tornadoes,TorTimes):
     # This function takes in a single warning and checks the list of tornado times and occurrences to
@@ -178,12 +208,22 @@ def checkForLSR(Warning,Tornadoes,TorTimes):
                         # Check for the begin/end points first
                         if (polygon.contains(beginPoint) or (beginPoint.within(polygon))):
                             print(" Tornado found!")
-                            verified = True
+                            # Plot the warning
+                            start = [float(Tornadoes[T][15]), float(Tornadoes[T][16])]
+                            end = [float(Tornadoes[T][17]), float(Tornadoes[T][18])]
+                            path = createPath(start, end, 10.0)
+                            plotWarnAndPath(path, polygon, torTime, warnTime, Warning[0], outdir)
+                            return True
 
                         # If that didn't work, then check the end point
                         elif (polygon.contains(endPoint) or (endPoint.within(polygon))):
                             print(" Tornado found!")
-                            verified = True
+                            # Plot the warning
+                            start = [float(Tornadoes[T][15]), float(Tornadoes[T][16])]
+                            end = [float(Tornadoes[T][17]), float(Tornadoes[T][18])]
+                            path = createPath(start, end, 10.0)
+                            plotWarnAndPath(path, polygon, torTime, warnTime, Warning[0], outdir)
+                            return True
 
                         else:
                             # Here we do a final check to see if the tornado passed through the warning, but did not
@@ -195,98 +235,19 @@ def checkForLSR(Warning,Tornadoes,TorTimes):
                                 location = Point(path[0][i],path[1][i])
                                 if (polygon.contains(location) or (location.within(polygon))):
                                     print(" Tornado Found!")
-                                    verified = True
+                                    # Plot the warning
+                                    start = [float(Tornadoes[T][15]), float(Tornadoes[T][16])]
+                                    end = [float(Tornadoes[T][17]), float(Tornadoes[T][18])]
+                                    path = createPath(start, end, 10.0)
+                                    plotWarnAndPath(path, polygon, torTime, warnTime, Warning[0], outdir)
+                                    return True
 
-                        # Plot the warning
-                        start = [float(Tornadoes[T][15]), float(Tornadoes[T][16])]
-                        end = [float(Tornadoes[T][17]), float(Tornadoes[T][18])]
-                        path = createPath(start, end, 10.0)
-                        plotWarnAndPath(path, polygon, torTime, warnTime, Warning[0], outdir)
+    # if we got to this point then no tornado was found; return False
+    print(" No tornado found...")
+    return False
 
-    if verified == False:
-        print(" No tornado found...")
-        return verified
-    else:
-        return verified
+########################################################################################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #
-    # # This line is returning an array of indices of TorTimes where the beginning time matches the year, month, and day of the tornado event
-    # PossibleTors = np.where([(Y.year == beginTime.year) and (Y.month == beginTime.month) and (Y.day == beginTime.day) for Y in TorTimes])[0]
-    #
-    #
-    # if len(PossibleTors) == 0: # If we couldn't find any possible tornadoes to match the start time then we'll check the end time in case
-    #                             # we switched UTC day.
-    #     PossibleTors = np.where([(Y.year == endTime.year) and (Y.month == endTime.month) and (Y.day == endTime.day) for Y in TorTimes])[0]
-    #
-    #
-    # if len(PossibleTors) == 0:
-    #     print("No tornadoes found on this date")
-    #     return False # At this point, there's no need to go further since no tornadoes happened on this day for this warning.
-    #
-    #
-    # #print(TorTimes[PossibleTors])
-    # #print(beginTime, endTime)
-    #
-    # # Check to see if any of the tornadoes occurred during the time frame of the warning
-    # PossibleTors = np.where([(T <= endTime) and (T >= beginTime) for T in TorTimes[PossibleTors]])[0]
-    #
-    # if len(PossibleTors) == 0:
-    #     print("No tornadoes found during this warning")
-    #     return False # At this point, there's no need to go further since no tornadoes happened during the time span of this warning.
-    #
-    #
-    #
-    #
-    #
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # now that we've checked the two obvious points, we'll have to check the in-between area.
-        # Note that we're going to assume each tornado follows a straight path from the beginning to end point
-        # This is obviously not the case in real life, but the exact paths are difficult to obtain/process.
-        # beginLat = float(Tornadoes[T][15])
-        # beginLon = float(Tornadoes[T][16])
-        # endLat = float(Tornadoes[T][17])
-        # endLon = float(Tornadoes[T][18])
-        #
-        # print(beginLat,endLat)
-        #
-        # increment = 10 # 1/degrees
-        # deltaX = (endLon - beginLon) / increment
-        # deltaY = (endLat - beginLat) / increment
-        # lats = []
-        # lat = beginLat
-        # # Need to figure out this algorithm
 
 
 
@@ -296,14 +257,38 @@ Warnings = dataReadIn(DataDirectory,WARfilename)
 Tornadoes = dataReadIn(DataDirectory,LSRfilename)
 TorTimes = getTornadoTimesList(Tornadoes)
 
-# print(Warnings[0])
-# print(Tornadoes[0])
-# print(TorTimes[0])
 
+data = []
 for Warning in Warnings:
     try:
         if Warning[1] == "TO":
-            checkForLSR(Warning,Tornadoes,TorTimes)
+            print(Warning)
+
+            # #### Categorical Block ####
+            date = datetime.datetime.strptime(Warning[2], "%Y%m%d%H%M")
+            if date.hour < 12:
+                date = date - datetime.timedelta(days=1)
+            datestring = datetime.datetime.strftime(date, "%Y%m%d")
+            print("\nTrying to find outlook for date " + datestring)
+            outlook_shapefile = getShapefile(datestring)
+            if outlook_shapefile is None:
+                exit()
+            else:
+                category = getCat(Warning, outlook_shapefile, plot=False, date=datestring)
+
+            #### Verification Block ####
+            verified = checkForLSR(Warning, Tornadoes, TorTimes)
+
+            data.append([Warning[0],Warning[2],category,verified])
+
     except:
-        print("Warning: Error while reading the line:")
+        print("\nWarning: Error while reading the line:")
         print(Warning)
+
+# Write output to CSV
+with open(DataDirectory+"tor_verification.csv", 'w') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    for line in data:
+        print(line)
+        csvwriter.writerow(line)
+csvfile.close()

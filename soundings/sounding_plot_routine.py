@@ -154,6 +154,3 @@ def plotSounding(p,t,td,u,v,hght, station=None,date=None):
 
 
     plt.show()
-
-
-

@@ -1,4 +1,3 @@
-# Upper Air
 from datetime import datetime, timedelta
 from metpy.units import units
 from siphon.simplewebservice.wyoming import WyomingUpperAir
@@ -8,8 +7,8 @@ import metpy.plots as mpplots
 import metpy.calc as mcalc
 import numpy as np
 
-station = "FWD"
-day = "07"
+station = "LZK"
+day = "22"
 month = "07"
 year = "2021"
 hour = "12"
@@ -167,7 +166,7 @@ def plotSounding(date,station):
     h = mpplots.Hodograph(ax_hod,component_range=80.)
     h.add_grid(increment=10)
     colors = heightColors(hght)
-    h.plot_colormapped(u,v,hght,intervals=np.arange(hght[0].magnitude,hght[-1].magnitude,1),colors=colors)
+    h.plot_colormapped(u[idx],v[idx],hght[idx],colors=colors)
 
 
 

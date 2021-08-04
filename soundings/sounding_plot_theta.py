@@ -63,13 +63,15 @@ def plotThetavPres(filename,filepath):
     ax.set_ylim(1000.0,100.0)
     ax.set_xlim(250.0,450.0)
     ax.grid(color='gray',linestyle='--')
-    ax.text(385.0,250,"Max Low/Mid-Level\nTheta-e Delta: "+str(round(diff,1))+" K",bbox={'facecolor':'0.9','edgecolor':'k','boxstyle':'square'})
+    ax.text(380.0,200,"Theta-e Deficit: "+str(round(diff,1))+" K",bbox={'facecolor':'0.9','edgecolor':'k','boxstyle':'square'})
     title = "Theta-e Profile at "+sounding_site +" on "+ sounding_date
     plt.title(title)
     plt.ylabel("Pres (hPa)")
     plt.xlabel("Theta-e (K)")
 
-    plt.show()
+    #plt.show()
+    plt.savefig(save_directory+sounding_site+"_"+sounding_date+".png")
+    plt.clf()
 
 ### Main Function ####
 for filename in os.listdir(csv_directory):

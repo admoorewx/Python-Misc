@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import datetime as DT
+import plotly.graph_objects as go
+import plotly.subplots as sp
 import matplotlib.pyplot as plt
 
 filename = "~/Research/Climo/OKC.csv"
@@ -108,6 +110,45 @@ def plotStats(dates,stats,site,variable,units):
     plt.show()
 
 
+def plotlyPlot(dates,stats,site,variable,units):
+    dates = [d[0:2]+"/"+d[2:] for d in dates] # format dates for x-axis
+    showleg = False # show the line in the legend
+    fig = sp.make_subplots(rows=1,cols=1,specs=[
+        [{"secondary_y": False}],
+    ])
+
+    # plot min line
+    fig.append_trace(go.Scatter(x=dates,y=stats[0],name="Minimum Value",
+                                 line=dict(color='blue'),showlegend=showleg),row=1,col=1)
+        # plot max line
+    fig.append_trace(go.Scatter(x=dates,y=stats[6],name="Maximum Value",
+                                 line=dict(color='red'),showlegend=showleg),row=1,col=1)
+    # plot the mean line
+    fig.append_trace(go.Scatter(x=dates,y=stats[3],name="Mean",
+                                 line=dict(color='black'),showlegend=showleg),row=1,col=1)
+    # plot the 10% line
+    fig.append_trace(go.Scatter(x=dates,y=stats[1],name="10th Percentile",
+                                 line=dict(color='gray'),showlegend=showleg),row=1,col=1)
+    # plot the 90% line
+    fig.append_trace(go.Scatter(x=dates,y=stats[5],name="90th Percentile",
+                                line=dict(color='gray'),fill='tonexty',showlegend=showleg),row=1,col=1)
+    # plot the 25% line
+    fig.append_trace(go.Scatter(x=dates,y=stats[2],name="25th Percentile",
+                                 line=dict(color='green'),fill=None,showlegend=showleg),row=1,col=1)
+    # plot the 75% line
+    fig.append_trace(go.Scatter(x=dates,y=stats[4],name="75th Percentile",
+                                 line=dict(color='green'),fill='tonexty',showlegend=showleg),row=1,col=1)
+
+    fig.update_yaxes(title=units,row=1,col=1)
+    fig.update_xaxes(title="Day/Month",row=1,col=1)
+    fig.update_layout(title={'text': f"{variable} Distribution for {site.upper()}",
+                      'y': 0.95,
+                      'x': 0.5,
+                      'xanchor': 'center',
+                      'yanchor': 'top'},
+                      autosize=True)
+    fig.show()
+
 
 # Read in the data
 valid, temps, dewps, wspd, relh, pres  = data_read_in(filename)
@@ -121,13 +162,9 @@ valid_dates = np.asarray(valid_dates)
 dates = getDates()
 
 # Get the stats
-stats = getStats(dates,relh)
-wind_stats = getStats(dates,wspd)
+stats = getStats(dates,temps)
 
 # plot the data
-plotStats(dates,stats,"OKC","Relative Humidity","Relh (%)")
-plotStats(dates,wind_stats,"OKC","Sustained Wind Speed","Knots")
-
-
-
+#plotStats(dates,stats,"OKC","Relative Humidity","Relh (%)")
+plotlyPlot(dates,stats,"OKC","Temperature","T (C)")
 
